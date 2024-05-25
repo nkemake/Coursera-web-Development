@@ -1,0 +1,48 @@
+---
+# tasks file for collins_php_site
+
+- name: install php and nginx
+  ansible.builtin.dnf:
+    name:
+      - php
+      - nginx
+    
+    state: present
+
+
+- name: check if httpd is running
+  ansible.builtin.command: systemctl is-active httpd
+  register: output
+  ignore_errors: yes
+
+
+- name: stop httpd
+  ansible.builtin.service:
+    name: httpd
+    state: stopped
+    enabled: false
+  when: output.rc == 0
+
+
+
+- name: start services
+  ansible.builtin.service:
+    name: "{{ item }}"
+    state: started
+    enabled: true
+  loop: 
+    - nginx
+    - php-fpm
+
+- name: copy php function to nginx.
+  ansible.builtin.copy:
+    src: index.php
+    dest: /usr/share/nginx/html/index.php
+
+- name: start services
+  ansible.builtin.service:
+    name: "{{ item }}"
+    state: restarted
+  loop:
+    - nginx
+    - php-fpm
